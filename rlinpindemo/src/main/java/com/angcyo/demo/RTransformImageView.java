@@ -21,10 +21,9 @@ import android.util.AttributeSet;
  */
 public class RTransformImageView extends AppCompatImageView {
     public Drawable[] drawables;
-
+    int scrollState = ViewPager.SCROLL_STATE_IDLE;
     private int curPosition = 0;
     private int nextPosition = 0;
-
     private float positionOffset = 0f;
 
     public RTransformImageView(Context context) {
@@ -44,21 +43,40 @@ public class RTransformImageView extends AppCompatImageView {
 
     public void setupViewPager(ViewPager viewPager) {
         viewPager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+                super.onPageScrollStateChanged(state);
+                int oldState = RTransformImageView.this.scrollState;
+                scrollState = state;
+                if (oldState == ViewPager.SCROLL_STATE_IDLE && state != oldState) {
+                    curPosition = nextPosition;
+                    RTransformImageView.this.positionOffset = 0;
+                }
+            }
+
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
                 super.onPageScrolled(position, positionOffset, positionOffsetPixels);
                 //Log.e("angcyo", " " + position + " " + positionOffset + " " + positionOffsetPixels);
-                if (positionOffset == 0) {
-                    curPosition = position;
-                } else {
-                    if (position < curPosition) {
-                        RTransformImageView.this.positionOffset = 1 - positionOffset;
-                        //向左
-                        nextPosition = position;
+
+                if (scrollState != ViewPager.SCROLL_STATE_IDLE) {
+                    if (positionOffset == 0) {
+                        curPosition = position;
                     } else {
-                        //向右
-                        RTransformImageView.this.positionOffset = positionOffset;
-                        nextPosition = position + 1;
+                        if (position < curPosition) {
+                            RTransformImageView.this.positionOffset = 1 - positionOffset;
+                            //向左
+                            if (scrollState == ViewPager.SCROLL_STATE_DRAGGING) {
+                                nextPosition = position;
+                            }
+                        } else {
+                            //向右
+                            RTransformImageView.this.positionOffset = positionOffset;
+                            if (scrollState == ViewPager.SCROLL_STATE_DRAGGING) {
+                                nextPosition = position + 1;
+                            }
+                        }
                     }
                 }
                 postInvalidate();
